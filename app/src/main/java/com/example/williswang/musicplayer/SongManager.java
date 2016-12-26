@@ -1,8 +1,5 @@
 package com.example.williswang.musicplayer;
 
-import android.os.Environment;
-import android.util.Log;
-
 import java.io.File;
 import java.util.ArrayList;
 
