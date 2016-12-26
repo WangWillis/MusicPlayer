@@ -18,6 +18,8 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import static android.os.Environment.DIRECTORY_MUSIC;
 
@@ -27,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
     //backend classes
     private SongManager songFiles;
     private MusicPlayer player;
+    private android.os.Handler myHandler = new android.os.Handler();
+
     //front end objects
     private SeekBar progressBar;
     private ListView songList;
@@ -34,11 +38,38 @@ public class MainActivity extends AppCompatActivity {
     private Button playPause, next, previous;
     private TextView currTime, totalTime, songName;
 
+    private boolean touching = false; //used to track if progressbar change from seek or not
+
     private AdapterView.OnItemClickListener songListClickHandler = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             player.changeSong(position);
             updateUI();
+        }
+    };
+
+    private Runnable updateSongTime = new Runnable() {
+        @Override
+        public void run() {
+            currTime.setText(String.format(Locale.getDefault(), "%d:%02d",
+                    TimeUnit.MILLISECONDS.toMinutes((long) player.getPosition()),
+                    TimeUnit.MILLISECONDS.toSeconds((long) player.getPosition()) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
+                                    toMinutes((long) player.getPosition()))));
+            if(!touching)
+                progressBar.setProgress((int)(player.getSongProgress()*progressBar.getMax()));
+
+            if(player.isSongDone()){
+                songName.setText(player.getCurrSong().getSongName());
+                totalTime.setText(String.format(Locale.getDefault(), "%d:%02d",
+                        TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
+                        TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
+                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
+                                toMinutes((long) player.getTotalTime()))));
+            }
+
+            //recursively call this object again after a time
+            myHandler.postDelayed(this, 100);
         }
     };
 
@@ -61,22 +92,25 @@ public class MainActivity extends AppCompatActivity {
         currTime = (TextView)findViewById(R.id.currTime);
         totalTime = (TextView)findViewById(R.id.totalTime);
         songName = (TextView)findViewById(R.id.songName);
-        player = new MusicPlayer(songFiles.getCurrFolder().getAllData(), songName, totalTime);
-
+        player = new MusicPlayer(songFiles.getCurrFolder().getAllData());
         progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                player.seek(((double)progress)/seekBar.getMax());
+                if(touching)
+                    player.seek(((double)progress)/seekBar.getMax());
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
+                player.pauseSong();
+                touching = true;
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-
+                player.resumeSong();
+                touching = false;
             }
         });
         
@@ -85,18 +119,9 @@ public class MainActivity extends AppCompatActivity {
         player.pauseSong();
         updateUI();
 
+        //start the updating of ui
+        myHandler.postDelayed(updateSongTime, 100);
     }
-
-    private Runnable UpdateSongTime = new Runnable() {
-        @Override
-        public void run() {
-            currTime.setText(String.format(Locale.getDefault(), "%d:%d",
-                    TimeUnit.MILLISECONDS.toMinutes((long) player.getPosition()),
-                    TimeUnit.MILLISECONDS.toSeconds((long) player.getPosition()) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                                    toMinutes((long) player.getPosition()))));
-        }
-    };
 
     private ArrayAdapter<String> getList(ArrayList<MusicFile> songList){
         ArrayAdapter<String> arr = new ArrayAdapter<String>(this, R.layout.list_item_wrapper, R.id.listItemView);
@@ -110,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateUI(){
         songName.setText(player.getCurrSong().getSongName());
-        totalTime.setText(String.format(Locale.getDefault(), "%d:%d",
+        totalTime.setText(String.format(Locale.getDefault(), "%d:%02d",
                 TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
                 TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
                         - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
