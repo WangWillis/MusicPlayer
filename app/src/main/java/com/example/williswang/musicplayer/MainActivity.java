@@ -74,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
+        
+        //start with a default song
+        player.changeSong(0);
+        player.pauseSong();
         updateUI();
 
     }
