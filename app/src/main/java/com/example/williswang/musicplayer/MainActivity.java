@@ -33,12 +33,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             player.changeSong(position);
-            songName.setText(player.getCurrSong().getSongName());
-            totalTime.setText(String.format(Locale.getDefault(), "%d:%d",
-                    TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
-                    TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
-                            - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                                    toMinutes((long) player.getTotalTime()))));
+            updateUI();
         }
     };
 
@@ -52,7 +47,17 @@ public class MainActivity extends AppCompatActivity {
         player = new MusicPlayer(songFiles.getCurrFolder().getAllData());
         //UI object initialization
         progressBar = (SeekBar)findViewById(R.id.seekBar);
-        //set what happens when seek bar changed
+        songList = (ListView)findViewById(R.id.songList);
+        songList.setAdapter(getList(songFiles.getCurrFolder().getAllData()));
+        songList.setOnItemClickListener(songListClickHandler);
+        searchText = (EditText)findViewById(R.id.searchBar);
+        playPause = (Button)findViewById(R.id.playPause);
+        next = (Button)findViewById(R.id.nextSong);
+        previous = (Button)findViewById(R.id.previousSong);
+        currTime = (TextView)findViewById(R.id.currTime);
+        totalTime = (TextView)findViewById(R.id.totalTime);
+        songName = (TextView)findViewById(R.id.songName);
+
         progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -69,17 +74,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        //set the list of songs to all songs
-        songList = (ListView)findViewById(R.id.songList);
-        songList.setAdapter(getList(songFiles.getCurrFolder().getAllData()));
-        songList.setOnItemClickListener(songListClickHandler);
-        searchText = (EditText)findViewById(R.id.searchBar);
-        playPause = (Button)findViewById(R.id.playPause);
-        next = (Button)findViewById(R.id.nextSong);
-        previous = (Button)findViewById(R.id.previousSong);
-        currTime = (TextView)findViewById(R.id.currTime);
-        totalTime = (TextView)findViewById(R.id.totalTime);
-        songName = (TextView)findViewById(R.id.songName);
+
+        updateUI();
 
     }
 
@@ -105,6 +101,15 @@ public class MainActivity extends AppCompatActivity {
             arr.add(songList.get(i).getSongName());
 
         return arr;
+    }
+
+    private void updateUI(){
+        songName.setText(player.getCurrSong().getSongName());
+        totalTime.setText(String.format(Locale.getDefault(), "%d:%d",
+                TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
+                TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
+                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
+                        toMinutes((long) player.getTotalTime()))));
     }
     /**
      * A native method that is implemented by the 'native-lib' native library,
