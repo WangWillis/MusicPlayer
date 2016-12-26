@@ -1,7 +1,9 @@
 package com.example.williswang.musicplayer;
 
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -11,13 +13,16 @@ import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.io.File;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import static android.os.Environment.DIRECTORY_MUSIC;
+
 public class MainActivity extends AppCompatActivity {
-    private static final String MUSIC_PATH = "/storage/sdcard0/Music";
+    //private final File MUSIC_PATH = this.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
 
     //backend classes
     private SongManager songFiles;
@@ -43,8 +48,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //song playing/managing thing
-        songFiles = new SongManager(MUSIC_PATH);
-        player = new MusicPlayer(songFiles.getCurrFolder().getAllData());
+        songFiles = new SongManager(Environment.getExternalStorageDirectory().toString()+"/Music");
         //UI object initialization
         progressBar = (SeekBar)findViewById(R.id.seekBar);
         songList = (ListView)findViewById(R.id.songList);
@@ -57,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
         currTime = (TextView)findViewById(R.id.currTime);
         totalTime = (TextView)findViewById(R.id.totalTime);
         songName = (TextView)findViewById(R.id.songName);
+        player = new MusicPlayer(songFiles.getCurrFolder().getAllData(), songName, totalTime);
 
         progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -90,14 +95,11 @@ public class MainActivity extends AppCompatActivity {
                     TimeUnit.MILLISECONDS.toSeconds((long) player.getPosition()) -
                             TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
                                     toMinutes((long) player.getPosition()))));
-            if(player.continueQueue())
-                songName.setText(player.getCurrSong().getSongName());
-            progressBar.setProgress((int)(player.getSongProgress()*progressBar.getMax()));
         }
     };
 
     private ArrayAdapter<String> getList(ArrayList<MusicFile> songList){
-        ArrayAdapter<String> arr = new ArrayAdapter<String>(this, R.layout.activity_main);
+        ArrayAdapter<String> arr = new ArrayAdapter<String>(this, R.layout.list_item_wrapper, R.id.listItemView);
 
         //add all song names to array
         for(int i = 0; i < songList.size(); i++)

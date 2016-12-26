@@ -3,8 +3,11 @@ package com.example.williswang.musicplayer;
 import android.media.MediaPlayer;
 import android.media.MediaTimestamp;
 import android.nfc.tech.MifareUltralight;
+import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by williswang on 12/24/16.
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 public class MusicPlayer {
     private MediaPlayer player; //thing that plays the music
     private Folder<MusicFile> queue; //stream of music
+    private TextView songNameField, songDirationField;
     private int currentSong; //the current song loaded
     private boolean songLoaded; //tells if a song can be played or not
 
@@ -26,8 +30,22 @@ public class MusicPlayer {
     }
 
     //constructor for the music player
-    public MusicPlayer(ArrayList<MusicFile> songs){
+    public MusicPlayer(ArrayList<MusicFile> songs, final TextView songNameField, final TextView songDirationField){
+        this.songNameField = songNameField;
+        this.songDirationField = songDirationField;
         player = new MediaPlayer();
+        player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                nextSong();
+                songNameField.setText(queue.getData(currentSong).getSongName());
+                songDirationField.setText(String.format(Locale.getDefault(), "%d:%d",
+                        TimeUnit.MILLISECONDS.toMinutes((long) player.getDuration()),
+                        TimeUnit.MILLISECONDS.toSeconds((long) player.getDuration())
+                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
+                                toMinutes((long) player.getDuration()))));
+            }
+        });
         //holds a queue of the songs
         queue = new Folder<MusicFile>("Queue", "", new ArrayList<MusicFile>(songs));
         currentSong = 0;
@@ -93,13 +111,13 @@ public class MusicPlayer {
             player.pause();
     }
 
-    public boolean continueQueue(){
-        if(!songLoaded || player.getCurrentPosition() != player.getDuration()
-                || queue.getSize() == 0)
-            return false;
-
-        return nextSong();
-    }
+//    public boolean continueQueue(){
+//        if(!songLoaded || player.getCurrentPosition() != player.getDuration()
+//                || queue.getSize() == 0)
+//            return false;
+//
+//        return nextSong();
+//    }
 
     public void seek(double percentage){
         if(percentage > 1 || !songLoaded)
@@ -108,7 +126,7 @@ public class MusicPlayer {
     }
 
     public boolean changeSong(int index){
-        if(queue == null)
+        if(queue == null || queue.getSize() == 0)
             return false;
 
         currentSong = index%queue.getSize();
@@ -116,7 +134,7 @@ public class MusicPlayer {
     }
 
     public boolean nextSong(){
-        if(queue == null)
+        if(queue == null || queue.getSize() == 0)
             return false;
 
         currentSong = (currentSong+1)%queue.getSize();
@@ -124,7 +142,7 @@ public class MusicPlayer {
     }
 
     public boolean previousSong(){
-        if(queue == null)
+        if(queue == null || queue.getSize() == 0)
             return false;
 
         //if playing for less than 5 seconds go to previous song
