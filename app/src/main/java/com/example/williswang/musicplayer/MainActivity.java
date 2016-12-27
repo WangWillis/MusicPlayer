@@ -3,6 +3,7 @@ package com.example.williswang.musicplayer;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -32,12 +33,25 @@ public class MainActivity extends AppCompatActivity {
     private Button playPause, next, previous;
     private TextView currTime, totalTime, songName;
 
+    private ArrayList<MusicFile> currListViewList;
     private boolean touching = false; //used to track if progressbar change from seek or not
+    private boolean changeQueue = false;
 
     private AdapterView.OnItemClickListener songListClickHandler = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            player.changeSong(position);
+            //change the queue if a song is selected from search results
+            if(changeQueue){
+                player.newQueue(currListViewList);
+                changeQueue = false;
+            }
+
+            if(position == 0){
+                currListViewList = player.shuffle();
+                songList.setAdapter(getList(currListViewList));
+            }else{
+                player.changeSong(position - 1);
+            }
             updateUI();
         }
     };
@@ -107,8 +121,57 @@ public class MainActivity extends AppCompatActivity {
                 touching = false;
             }
         });
-        
+
+        playPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(player.isPlaying())
+                    player.pauseSong();
+                else if(!touching)
+                    player.resumeSong();
+            }
+        });
+
+        next.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                player.nextSong();
+                updateUI();
+            }
+        });
+
+        previous.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                player.previousSong();
+                updateUI();
+            }
+        });
+
+        searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                ArrayList<MusicFile> searchResults = null; //holds the results of search
+
+                //get search results or return back to current list
+                if(v.getText().toString().equals(""))
+                    searchResults = songFiles.getCurrFolder().getAllData();
+                else
+                    searchResults = songFiles.search(v.getText().toString());
+
+                if(searchResults == null)
+                    return false;
+
+                songList.setAdapter(getList(searchResults));
+                //set the next queue to put if search results are pressed
+                currListViewList = searchResults;
+                changeQueue = true;
+                return true;
+            }
+        });
+
         //start with a default song
+        currListViewList = songFiles.getCurrFolder().getAllData();
         player.changeSong(0);
         player.pauseSong();
         updateUI();
@@ -119,6 +182,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayAdapter<String> getList(ArrayList<MusicFile> songList){
         ArrayAdapter<String> arr = new ArrayAdapter<String>(this, R.layout.list_item_wrapper, R.id.listItemView);
+
+        //add the shuffle option
+        arr.add("Shuffle");
 
         //add all song names to array
         for(int i = 0; i < songList.size(); i++)
