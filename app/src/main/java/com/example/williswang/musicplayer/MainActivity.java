@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean touching = false; //used to track if progressbar change from seek or not
     private boolean changeQueue = false;
 
+    //used to select and play songs from the list view
     private AdapterView.OnItemClickListener songListClickHandler = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
                 changeQueue = false;
             }
 
+            //check if shuffle pressed if not play the songs
             if(position == 0){
                 currListViewList = player.shuffle();
                 songList.setAdapter(getList(currListViewList));
@@ -56,30 +58,78 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //for updating the song time and seek bar and auto continue to next song
     private Runnable updateSongTime = new Runnable() {
         @Override
         public void run() {
+            //update song time
             currTime.setText(String.format(Locale.getDefault(), "%d:%02d",
                     TimeUnit.MILLISECONDS.toMinutes((long) player.getPosition()),
                     TimeUnit.MILLISECONDS.toSeconds((long) player.getPosition()) -
                             TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
                                     toMinutes((long) player.getPosition()))));
+
+            //update seekbar if not seeking
             if(!touching)
                 progressBar.setProgress((int)(player.getSongProgress()*progressBar.getMax()));
 
-            if(player.isSongDone()){
-                songName.setText(player.getCurrSong().getSongName());
-                totalTime.setText(String.format(Locale.getDefault(), "%d:%02d",
-                        TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
-                        TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
-                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                                toMinutes((long) player.getTotalTime()))));
-            }
+            //update the ui if song has been completed
+            if(player.isSongDone())
+                updateUI();
 
             //recursively call this object again after a time
             myHandler.postDelayed(this, 100);
         }
     };
+
+    //used to search for songs
+    private TextView.OnEditorActionListener searchListener = new TextView.OnEditorActionListener() {
+        @Override
+        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+            ArrayList<MusicFile> searchResults = null; //holds the results of search
+
+            //get search results or return back to current list
+            if(v.getText().toString().equals(""))
+                searchResults = songFiles.getCurrFolder().getAllData();
+            else
+                searchResults = songFiles.search(v.getText().toString());
+
+            if(searchResults == null)
+                return false;
+
+            songList.setAdapter(getList(searchResults));
+            //set the next queue to put if search results are pressed
+            currListViewList = searchResults;
+            changeQueue = true;
+            return true;
+        }
+    };
+
+    //used to seek the song
+    private SeekBar.OnSeekBarChangeListener seekSong = new SeekBar.OnSeekBarChangeListener() {
+        //move song to correct position
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            if(touching)
+                player.seek(((double)progress)/seekBar.getMax());
+        }
+
+        //check to see if seekbar is being changed by user
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+            player.pauseSong();
+            touching = true;
+        }
+
+        //seekbar is not being changed by user
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            player.resumeSong();
+            touching = false;
+        }
+    };
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,40 +138,25 @@ public class MainActivity extends AppCompatActivity {
 
         //song playing/managing thing
         songFiles = new SongManager(Environment.getExternalStorageDirectory().toString()+"/Music");
+        player = new MusicPlayer(songFiles.getCurrFolder().getAllData());
+        currListViewList = songFiles.getCurrFolder().getAllData();
+
         //UI object initialization
-        progressBar = (SeekBar)findViewById(R.id.seekBar);
         songList = (ListView)findViewById(R.id.songList);
         songList.setAdapter(getList(songFiles.getCurrFolder().getAllData()));
         songList.setOnItemClickListener(songListClickHandler);
+        progressBar = (SeekBar)findViewById(R.id.seekBar);
+        progressBar.setOnSeekBarChangeListener(seekSong);
         searchText = (EditText)findViewById(R.id.searchBar);
+        searchText.setOnEditorActionListener(searchListener);
         playPause = (Button)findViewById(R.id.playPause);
         next = (Button)findViewById(R.id.nextSong);
         previous = (Button)findViewById(R.id.previousSong);
         currTime = (TextView)findViewById(R.id.currTime);
         totalTime = (TextView)findViewById(R.id.totalTime);
         songName = (TextView)findViewById(R.id.songName);
-        player = new MusicPlayer(songFiles.getCurrFolder().getAllData());
-        progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if(touching)
-                    player.seek(((double)progress)/seekBar.getMax());
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                player.pauseSong();
-                touching = true;
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                player.resumeSong();
-                touching = false;
-            }
-        });
-
+        //setting listeners for the buttons
         playPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -148,30 +183,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                ArrayList<MusicFile> searchResults = null; //holds the results of search
-
-                //get search results or return back to current list
-                if(v.getText().toString().equals(""))
-                    searchResults = songFiles.getCurrFolder().getAllData();
-                else
-                    searchResults = songFiles.search(v.getText().toString());
-
-                if(searchResults == null)
-                    return false;
-
-                songList.setAdapter(getList(searchResults));
-                //set the next queue to put if search results are pressed
-                currListViewList = searchResults;
-                changeQueue = true;
-                return true;
-            }
-        });
-
         //start with a default song
-        currListViewList = songFiles.getCurrFolder().getAllData();
         player.changeSong(0);
         player.pauseSong();
         updateUI();
@@ -180,6 +192,17 @@ public class MainActivity extends AppCompatActivity {
         myHandler.postDelayed(updateSongTime, 100);
     }
 
+    //updates the total song time and song name
+    private void updateUI(){
+        songName.setText(player.getCurrSong().getSongName());
+        totalTime.setText(String.format(Locale.getDefault(), "%d:%02d",
+                TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
+                TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
+                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
+                        toMinutes((long) player.getTotalTime()))));
+    }
+
+    //turns an array list into and array adapter
     private ArrayAdapter<String> getList(ArrayList<MusicFile> songList){
         ArrayAdapter<String> arr = new ArrayAdapter<String>(this, R.layout.list_item_wrapper, R.id.listItemView);
 
@@ -191,15 +214,6 @@ public class MainActivity extends AppCompatActivity {
             arr.add(songList.get(i).getSongName());
 
         return arr;
-    }
-
-    private void updateUI(){
-        songName.setText(player.getCurrSong().getSongName());
-        totalTime.setText(String.format(Locale.getDefault(), "%d:%02d",
-                TimeUnit.MILLISECONDS.toMinutes((long) player.getTotalTime()),
-                TimeUnit.MILLISECONDS.toSeconds((long) player.getTotalTime())
-                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                        toMinutes((long) player.getTotalTime()))));
     }
     /**
      * A native method that is implemented by the 'native-lib' native library,

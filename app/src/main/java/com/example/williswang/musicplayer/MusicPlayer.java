@@ -62,13 +62,11 @@ public class MusicPlayer {
         return true;
     }
 
-    public boolean newQueue(ArrayList<MusicFile> songs){
-        player.stop();
+    public void newQueue(ArrayList<MusicFile> songs){
+        player.pause();
         queue.setData(new ArrayList<MusicFile>(songs));
         currentSong = 0;
-        player.reset();
         songLoaded = false;
-        return startSong();
     }
 
     public void clearQueue(){
@@ -82,14 +80,15 @@ public class MusicPlayer {
         queue.add(song);
     }
 
-    public boolean shuffle(){
+    public ArrayList<MusicFile> shuffle(){
         if(queue == null || queue.getSize() == 0)
-            return false;
+            return null;
 
         player.stop();
         queue.shuffle();
         currentSong = 0;
-        return startSong();
+        startSong();
+        return queue.getAllData();
     }
 
     public void resumeSong(){
@@ -154,5 +153,9 @@ public class MusicPlayer {
 
     public boolean isSongDone(){
         return songDone;
+    }
+
+    public boolean isPlaying(){
+        return player.isPlaying();
     }
 }
