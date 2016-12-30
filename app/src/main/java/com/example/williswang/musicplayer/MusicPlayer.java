@@ -63,8 +63,13 @@ public class MusicPlayer {
     }
 
     public void newQueue(ArrayList<MusicFile> songs){
+        ArrayList<MusicFile> newSongs = null;
         player.pause();
-        queue.setData(new ArrayList<MusicFile>(songs));
+
+        if(songs != null)
+            newSongs = new ArrayList<MusicFile>(songs);
+
+        queue.setData(new ArrayList<MusicFile>(newSongs));
         currentSong = 0;
         songLoaded = false;
     }

@@ -33,24 +33,40 @@ public class Folder<T> {
     }
 
     public int getSize(){
+        if(data == null)
+             return 0;
+
         return data.size();
     }
 
-    public void sort(){
+    public boolean sort(){
+        if(data == null)
+            return false;
+
         Collections.sort(data, new Comparator<T>() {
             @Override
             public int compare(T o1, T o2) {
                 return o1.toString().compareTo(o2.toString());
             }
         });
+
+        return true;
     }
 
-    public void add(T info){
+    public boolean add(T info){
+        if(data == null)
+            return false;
         data.add(info);
+        return true;
     }
 
-    public void shuffle(){
+    public boolean shuffle(){
+        if(data == null)
+            return false;
+
         Collections.shuffle(data);
+
+        return true;
     }
 
     public T getData(int index){
@@ -63,6 +79,8 @@ public class Folder<T> {
     }
 
     public void clearData(){
+        if(data == null)
+            return;
         data.clear();
     }
 
