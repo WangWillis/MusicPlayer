@@ -32,6 +32,7 @@ public class Trie <T>{
             children = new HashMap<Character, TrieNode<T>>();
         }
 
+        //for adding data to the node
         public void addData(String key, T data){
             if(this.data == null)
                 this.data = new HashMap<String, T>();
@@ -103,12 +104,18 @@ public class Trie <T>{
         Iterator<Character> childs = node.children.keySet().iterator();
 
         //check if data valid
-        if(node.data != null && !added.contains(node.data)) {
-            Iterator<String> datas = node.data.keySet().iterator();
+        if(node.data != null) {
+            //add all the keys to the list
+            Iterator<String> datas = node.data.keySet().iterator(); //go through all the key in set
             while(datas.hasNext()) {
-                String key = datas.next();
-                list.add(node.data.get(key));
-                added.add(node.data.get(key));
+                String key = datas.next(); //the key to the data
+                T data = node.data.get(key); //the data to try to add
+
+                //check if data has been added before
+                if(!added.contains(data)) {
+                    list.add(data);
+                    added.add(data);
+                }
             }
         }
 
