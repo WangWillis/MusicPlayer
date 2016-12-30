@@ -17,7 +17,7 @@ public class Trie <T>{
     //Node for the trie for Strings
     private class TrieNode <T>{
         public char letter;
-        public T data; //holds a piece of data
+        public HashMap<String, T> data; //holds a piece of data
         public HashMap<Character, TrieNode<T>> children; //holds the children of this node
 
         public TrieNode(){
@@ -30,6 +30,13 @@ public class Trie <T>{
             this.letter = letter;
             this.data = null;
             children = new HashMap<Character, TrieNode<T>>();
+        }
+
+        public void addData(String key, T data){
+            if(this.data == null)
+                this.data = new HashMap<String, T>();
+
+            this.data.put(key, data);
         }
     }
 
@@ -71,7 +78,7 @@ public class Trie <T>{
 
             curr = curr.children.get(currLetter);
         }
-        curr.data = data;
+        curr.addData(key, data);
 
         return true;
     }
@@ -94,11 +101,17 @@ public class Trie <T>{
 
     private void getTreeData(TrieNode<T> node, ArrayList<T> list, HashSet<T> added){
         Iterator<Character> childs = node.children.keySet().iterator();
+
         //check if data valid
         if(node.data != null && !added.contains(node.data)) {
-            list.add(node.data);
-            added.add(node.data);
+            Iterator<String> datas = node.data.keySet().iterator();
+            while(datas.hasNext()) {
+                String key = datas.next();
+                list.add(node.data.get(key));
+                added.add(node.data.get(key));
+            }
         }
+
         while(childs.hasNext()){
             getTreeData(node.children.get(childs.next()), list, added);
         }
@@ -126,6 +139,6 @@ public class Trie <T>{
 
     public T getData(String key){
         key = key.toUpperCase().trim();
-        return getSearchTreeStart(key).data;
+        return getSearchTreeStart(key).data.get(key);
     }
 }
