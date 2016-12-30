@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 searchResults = songFiles.search(v.getText().toString());
 
             if(searchResults == null)
-                return false;
+
 
             songList.setAdapter(getList(searchResults));
             //set the next queue to put if search results are pressed
@@ -209,9 +209,12 @@ public class MainActivity extends AppCompatActivity {
         //add the shuffle option
         arr.add("Shuffle");
 
-        //add all song names to array
-        for(int i = 0; i < songList.size(); i++)
-            arr.add(songList.get(i).getSongName());
+        //check for non existent songlist
+        if(songList != null) {
+            //add all song names to array
+            for (int i = 0; i < songList.size(); i++)
+                arr.add(songList.get(i).getSongName());
+        }
 
         return arr;
     }
