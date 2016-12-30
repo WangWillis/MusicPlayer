@@ -1,7 +1,5 @@
 # MusicPlayer
-A basic music playing application with search and shuffle feature
-
-Planning on adding voice control feature
+A music playing application with some bells and whistles
 #Installation/Setup
 1. Install app on phone
 2. Go to Settings
