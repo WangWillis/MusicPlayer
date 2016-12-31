@@ -23,13 +23,20 @@ public class Trie <T>{
         public TrieNode(){
             letter = 0;
             data = null;
-            children = new HashMap<Character, TrieNode<T>>();
+            children = null;
         }
 
         public TrieNode(char letter){
             this.letter = letter;
             this.data = null;
-            children = new HashMap<Character, TrieNode<T>>();
+            children = null;
+        }
+
+        public void addChild(char letter, TrieNode<T> node){
+            if(children == null)
+                children = new HashMap<Character, TrieNode<T>>();
+
+            children.put(letter, node);
         }
 
         //for adding data to the node
@@ -39,47 +46,48 @@ public class Trie <T>{
 
             this.data.put(key, data);
         }
+
+        public TrieNode<T> getChild(char letter){
+            if(children == null)
+                return null;
+            return children.get(letter);
+        }
     }
 
     private TrieNode<T> head; //holds all possible starting TrieNodes
-    private int numElements;
 
     public Trie(){
         head = new TrieNode<T>();
-        numElements = 0;
+    }
+
+    public boolean add(String key, T data){
+        key = key.toUpperCase().trim();
+        return add(key, data, 0);
     }
 
     //adding is not case sensitive
-    public boolean add(String key, T data){
-        key = key.toUpperCase().trim();
+    private boolean add(String key, T data, int start){
         TrieNode<T> curr = head; //hold the current node in the travel
-        boolean newWord = false; //to see if should add node to arraylist
 
-        for(int i = 0; i < key.length(); i++){
+        for(int i = start; i < key.length(); i++){
             //get index of letter
             char currLetter = key.charAt(i);
 
             //create a new node since new string
-            if(curr.children.get(currLetter) == null) {
+            if(curr.getChild(currLetter) == null) {
                 TrieNode<T> nodeAdd = new TrieNode<T>(key.charAt(i)); //holds the node to add to
                                                                       //structure
                 //link node
-                curr.children.put(currLetter, nodeAdd);
+                curr.addChild(currLetter, nodeAdd);
             }
 
-            //index all sub words too
-            if(newWord) {
-                add(key.substring(i), data);
-                newWord = false;
-            }else {
-                //next word is a new word
-                if (key.charAt(i) == ' ')
-                    newWord = true;
-            }
-
-            curr = curr.children.get(currLetter);
+            curr = curr.getChild(currLetter);
         }
+
         curr.addData(key, data);
+
+        if(key.indexOf(" ", start) != -1)
+            return add(key, data, key.indexOf(" ", start)+1);
 
         return true;
     }
@@ -92,8 +100,9 @@ public class Trie <T>{
             //if the key is not found
             if(curr == null)
                 break;
+
             //keep traveling
-            curr = curr.children.get(key.charAt(i));
+            curr = curr.getChild(key.charAt(i));
         }
 
         //give back the starting location
@@ -101,7 +110,10 @@ public class Trie <T>{
     }
 
     private void getTreeData(TrieNode<T> node, ArrayList<T> list, HashSet<T> added){
-        Iterator<Character> childs = node.children.keySet().iterator();
+        Iterator<Character> childs = null;
+
+        if(node.children != null)
+            childs = node.children.keySet().iterator();
 
         //check if data valid
         if(node.data != null) {
@@ -119,9 +131,12 @@ public class Trie <T>{
             }
         }
 
-        while(childs.hasNext()){
-            getTreeData(node.children.get(childs.next()), list, added);
-        }
+        if(childs == null)
+            return;
+
+        while(childs.hasNext())
+            getTreeData(node.getChild(childs.next()), list, added);
+
     }
 
     public ArrayList<T> search(String key){
