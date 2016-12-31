@@ -12,8 +12,6 @@ import java.util.Iterator;
 //data structure for search
 //keys are strings
 public class Trie <T>{
-    private final static int NUM_CHARACTERS = 65; //number of characters recognized by structure
-
     //Node for the trie for Strings
     private class TrieNode <T>{
         public char letter;

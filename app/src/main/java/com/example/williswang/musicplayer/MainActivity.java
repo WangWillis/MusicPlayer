@@ -3,6 +3,7 @@ package com.example.williswang.musicplayer;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
@@ -95,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
                 searchResults = songFiles.search(v.getText().toString());
 
             if(searchResults == null)
-
+                return false;
 
             songList.setAdapter(getList(searchResults));
             //set the next queue to put if search results are pressed
